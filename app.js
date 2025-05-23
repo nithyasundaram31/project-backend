@@ -23,6 +23,7 @@ app.use(logger);
 
 app.use('/api/auth', userRoute);
 
+
 app.use('/api/students', studentRouter);
 
 //exam
@@ -32,6 +33,9 @@ app.use('/api/exam', examRouter);
 app.use('/api/questions', router)
 
 app.use('/api/result', resultRouter)
+app.get("/",(req,res)=>{
+    res.send("server is running..")
+})
 
 
 
