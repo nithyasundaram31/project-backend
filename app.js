@@ -12,7 +12,7 @@ const resultRouter = require("./routers/resultsRoute");
 const app = express();
 
 app.use(cors({
-    origin: 'https://keen-sunburst-3cfa0d.netlify.app/', // Replace with your frontend URL
+    origin: 'https://keen-sunburst-3cfa0d.netlify.app', // Replace with your frontend URL
     credentials: true, // Allow credentials to be sent
 }));
 
