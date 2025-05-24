@@ -12,7 +12,7 @@ const resultRouter = require("./routers/resultsRoute");
 const app=express();
 
 app.use(cors({
-    origin: 'https://chipper-donut-48ff99.netlify.app', // Replace with your frontend URL
+    origin: 'https://superlative-alfajores-462fe1.netlify.app', // Replace with your frontend URL
     credentials: true, // Allow credentials to be sent
 }));
 
