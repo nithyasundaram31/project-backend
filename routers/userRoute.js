@@ -10,8 +10,8 @@ userRoute.post('/register',registerUser);
 userRoute.post('/login',  loginUser);
 
 //profile
-userRoute.get('/Profile', authenticate(), getProfile);
-userRoute.put('/Profile/:id',authenticate(), updateProfile );
+userRoute.get('/profile', authenticate(), getProfile);
+userRoute.put('/profile/:id',authenticate(), updateProfile );
 
 //admin routes
 userRoute.get('/admin/students',authenticate('admin'), getAllStudents );
