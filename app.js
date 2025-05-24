@@ -12,7 +12,7 @@ const resultRouter = require("./routers/resultsRoute");
 const app=express();
 
 app.use(cors({
-    origin: 'https://incomparable-babka-4a4191.netlify.app', // Replace with your frontend URL
+    origin: 'https://leafy-wisp-24ab47.netlify.app', // Replace with your frontend URL
     credentials: true, // Allow credentials to be sent
 }));
 
