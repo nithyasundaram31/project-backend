@@ -38,6 +38,7 @@ app.use('/api/exam', examRouter);
 app.use('/api/questions', router)
 
 app.use('/api/result', resultRouter)
+
 app.get("/", (req, res) => {
     res.send("server is running..")
 })

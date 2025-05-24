@@ -10,7 +10,7 @@ userRoute.post('/register',registerUser);
 userRoute.post('/login',  loginUser);
 
 //profile
-userRoute.get('/profile', authenticate(), getProfile);
+userRoute.get('/profile/:id', authenticate(), getProfile);
 userRoute.put('/profile/:id',authenticate(), updateProfile );
 
 //admin routes
