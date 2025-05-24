@@ -15,7 +15,7 @@ userRoute.put('/profile/:id',authenticate(), updateProfile );
 
 //admin routes
 userRoute.get('/admin/students',authenticate('admin'), getAllStudents );
-userRoute.put('/admin/students/:id',authenticate('admin'), updateStudentById );
+userRoute.put('/admin/student/:id',authenticate('admin'), updateStudentById );
 
 
 
