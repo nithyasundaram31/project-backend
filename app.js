@@ -4,12 +4,17 @@ const userRoute = require("./routers/userRoute");
 const errorRoute = require("./utils/errorRoute");
 const studentRouter=require('./routers/studentRoutes');
 const examRouter = require("./routers/examRoute");
-
+const cors = require('cors');
 const router = require("./routers/questionRoute");
 const resultRouter = require("./routers/resultsRoute");
 
 
 const app=express();
+
+app.use(cors({
+    origin: 'https://chipper-donut-48ff99.netlify.app', // Replace with your frontend URL
+    credentials: true, // Allow credentials to be sent
+}));
 
 // Middleware to parse JSON request bodies
 // app.use(express.json());
