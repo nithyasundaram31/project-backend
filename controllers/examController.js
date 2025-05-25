@@ -5,31 +5,45 @@ const Question=require('../models/Question')
 
 examController = {
     createExam: async (req, res) => {
-        try {
-            const { name, title, date, duration, totalQuestions, description, totalMarks,questions } = req.body;
+    try {
+        const { name, title, date, duration, totalQuestions, description, totalMarks, questions, permittedStudentIds } = req.body;
 
+        const createdBy = req.user ? req.user.userId : null;
 
-            const createdBy = req.user ? req.user.userId : null; // this is who logged in their userId  it comes from authmiddlewre  like req.user=decoded 
-            const newExam = new Exam({
-                name: name,
-                title: title,
-                date: date,
-                description: description,
-                duration: duration,
-                totalMarks: totalMarks,
-                totalQuestions: totalQuestions,
-                questions: questions,
-                createdBy: createdBy // The user who is logged in and creating this exam
-            });
-            await newExam.save();
-             const populatedExam = await newExam.populate(['createdBy','questions']);
-            return res.status(201).json({ message: 'Exam Created successfully', exam:populatedExam });
+        const newExam = new Exam({
+            name,
+            title,
+            date,
+            description,
+            duration,
+            totalMarks,
+            totalQuestions,
+            questions,
+            createdBy
+        });
 
-        } catch (error) {
-            return res.status(500).json({ message: 'error creating Exam', error: error.message });
+        await newExam.save();
+        const populatedExam = await newExam.populate(['createdBy', 'questions']);
 
+        // Give permission to selected students or all students
+        if (permittedStudentIds && permittedStudentIds.length > 0) {
+            await User.updateMany(
+                { _id: { $in: permittedStudentIds } },
+                { $push: { examPermission: newExam._id } }
+            );
+        } else {
+            await User.updateMany(
+                { role: 'student' },
+                { $push: { examPermission: newExam._id } }
+            );
         }
-    },
+
+        return res.status(201).json({ message: 'Exam Created successfully', exam: populatedExam });
+    } catch (error) {
+        return res.status(500).json({ message: 'Error creating exam', error: error.message });
+    }
+},
+
    
     // Get all exams
     getExams : async (req, res) => {
