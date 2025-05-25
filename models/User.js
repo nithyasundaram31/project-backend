@@ -27,15 +27,11 @@ role:{
     default:'student'
 },
 
-//  examPermission: {
-//     type: Boolean, // true or false
-//     default: false,   
-//   },
+ examPermission: {
+    type: Boolean, // true or false
+    default: false,   
+  },
 
-examPermission: [{
-  type: mongoose.Schema.Types.ObjectId,
-  ref: 'Exam'
-}],
 
   profile:{
    address: {
