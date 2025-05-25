@@ -29,12 +29,12 @@ examController = {
         if (permittedStudentIds && permittedStudentIds.length > 0) {
             await User.updateMany(
                 { _id: { $in: permittedStudentIds } },
-                { $push: { examPermission: newExam._id } }
+                {  $addToSet: { examPermission: newExam._id }  }
             );
         } else {
             await User.updateMany(
                 { role: 'student' },
-                { $push: { examPermission: newExam._id } }
+                { $addToSet: { examPermission: newExam._id }  }
             );
         }
 
@@ -127,7 +127,8 @@ getExamById : async (req, res) => {
                 options: question.options,
                 difficulty: question.difficulty,
                 // Only include correctAnswer if needed (might want to exclude for student view)
-                correctAnswer: question.correctAnswer
+                // correctAnswer: question.correctAnswer
+                correctAnswer: req.user?.role === 'admin' ? question.correctAnswer : undefined
             })),
             metadata: {
                 createdAt: exam.createdAt,
@@ -148,7 +149,10 @@ updateExam :async (req, res) => {
             return res.status(404).json({ message: 'Exam not found' });
         }
         // Update the exam fields with the new data from the request body
-        Object.assign(exam, req.body); // Use Object.assign to update fields 
+        // Object.assign(exam, req.body); // Use Object.assign to update fields 
+        if (req.user.role !== 'admin' && req.user.userId !== exam.createdBy.toString()) {
+    return res.status(403).json({ message: 'Not authorized to update this exam' });
+}
         await exam.save();
         res.status(200).json({ message: 'Exam updated successfully' });
     } catch (error) {
