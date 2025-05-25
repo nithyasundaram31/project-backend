@@ -32,42 +32,55 @@ examController = {
     },
    
     // Get all exams
-    getExams: async (req, res) => {
-    const { userId, role } = req.user; // Extract userId and role from req.user
+    getExams : async (req, res) => {
+    const { userId, role } = req.user;
     let exams;
-    let submittedData;
+    let submittedData = [];
     let user;
+
     try {
         if (role === "student") {
-            // Students should get all exams
-            exams = await Exam.find();
-            //get exam permission
-            user = await User.find({ _id: userId }) 
-                .select('_id name  examPermission role')
-                .exec(); //for final execute 
-            //get exam submite
+            // Fetch the user with exam permissions
+            user = await User.findById(userId)
+                .select('_id name examPermission role')
+                .exec();
+
+            if (!user || !user.examPermission || user.examPermission.length === 0) {
+                return res.status(200).json({
+                    success: true,
+                    exams: [],
+                    submittedData: [],
+                    user
+                });
+            }
+
+            //  Only return exams the student is allowed to see
+            exams = await Exam.find({ _id: { $in: user.examPermission } });
+
+            // Fetch the student's submissions
             submittedData = await Submission.find({ userId })
                 .populate({
                     path: 'examId',
-                    select: 'name' // Only select the 'name' field from the 'examId'
+                    select: 'name'
                 })
                 .populate({
                     path: 'userId',
-                    select: 'examPermission' // Only select the 'examPermission' field from the 'userId'
-                })
-                .exec();
+                    select: 'examPermission'
+                });
+
         } else if (role === "admin") {
-            // Admins should get only the exams they created
-            exams = await Exam.find();
+            exams = await Exam.find(); // Admin gets all exams
         } else {
             return res.status(403).json({ message: 'Unauthorized access' });
         }
 
-        res.status(200).json({ success: true, exams, submittedData, user }); // Send the exams data as JSON
+        res.status(200).json({ success: true, exams, submittedData, user });
+
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching exams', error }); 
+        res.status(500).json({ message: 'Error fetching exams', error: error.message });
     }
 },
+
 
 // Get exam by ID
 getExamById : async (req, res) => {
