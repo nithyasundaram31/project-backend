@@ -1,63 +1,108 @@
 const Exam = require('../models/Exam');
-const Question = require('../models/Question');
 const Submission = require('../models/Submission');
 const User = require('../models/User');
+const Question=require('../models/Question')
 
-exports.createExam = async (req, res) => {
+examController = {
+    createExam: async (req, res) => {
     try {
-        const exam = new Exam({ ...req.body, createdBy: req.user?.userId });
-        await exam.save();
-        res.status(201).json({ exam, message: 'Exam Created successfully' });
-    } catch (error) {
-        res.status(500).json({ message: 'Error creating exam', error });
-    }
-};
+        const { name, title, date, duration, totalQuestions, description, totalMarks, questions, permittedStudentIds } = req.body;
 
-// Get all exams
-exports.getExams = async (req, res) => {
-    const { userId, role } = req.user; // Extract userId and role from req.user
+        const createdBy = req.user ? req.user.userId : null;
+
+        const newExam = new Exam({
+            name,
+            title,
+            date,
+            description,
+            duration,
+            totalMarks,
+            totalQuestions,
+            questions,
+            createdBy
+        });
+
+        await newExam.save();
+        const populatedExam = await newExam.populate(['createdBy', 'questions']);
+
+        // Give permission to selected students or all students
+        if (permittedStudentIds && permittedStudentIds.length > 0) {
+            await User.updateMany(
+                { _id: { $in: permittedStudentIds } },
+                { $push: { examPermission: newExam._id } }
+            );
+        } else {
+            await User.updateMany(
+                { role: 'student' },
+                { $push: { examPermission: newExam._id } }
+            );
+        }
+
+        return res.status(201).json({ message: 'Exam Created successfully', exam: populatedExam });
+    } catch (error) {
+        return res.status(500).json({ message: 'Error creating exam', error: error.message });
+    }
+},
+
+   
+    // Get all exams
+    getExams : async (req, res) => {
+    const { userId, role } = req.user;
     let exams;
-    let submittedData;
+    let submittedData = [];
     let user;
+
     try {
         if (role === "student") {
-            // Students should get all exams
-            exams = await Exam.find();
-            //get exam permission
-            user = await User.find({ _id: userId })
-                .select('_id examPermission role')
+            // Fetch the user with exam permissions
+            user = await User.findById(userId)
+                .select('_id name examPermission role')
                 .exec();
-            //get exam submite
+
+            if (!user || !user.examPermission || user.examPermission.length === 0) {
+                return res.status(200).json({
+                    success: true,
+                    exams: [],
+                    submittedData: [],
+                    user
+                });
+            }
+
+            //  Only return exams the student is allowed to see
+            exams = await Exam.find({ _id: { $in: user.examPermission } });
+
+            // Fetch the student's submissions
             submittedData = await Submission.find({ userId })
                 .populate({
                     path: 'examId',
-                    select: 'name' // Only select the 'name' field from the 'examId'
+                    select: 'name'
                 })
                 .populate({
                     path: 'userId',
-                    select: 'examPermission' // Only select the 'examPermission' field from the 'userId'
-                })
-                .exec();
+                    select: 'examPermission'
+                });
+
         } else if (role === "admin") {
-            // Admins should get only the exams they created
-            exams = await Exam.find();
+            exams = await Exam.find(); // Admin gets all exams
         } else {
             return res.status(403).json({ message: 'Unauthorized access' });
         }
 
-        res.status(200).json({ success: true, exams, submittedData, user }); // Send the exams data as JSON
+        res.status(200).json({ success: true, exams, submittedData, user });
+
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching exams', error }); // Handle server errors
+        res.status(500).json({ message: 'Error fetching exams', error: error.message });
     }
-};
+},
+
 
 // Get exam by ID
-exports.getExamById = async (req, res) => {
+getExamById : async (req, res) => {
     try {
         const { id } = req.params; // Get the exam ID from the request parameters
         // Find the exam by ID and populate the questions
         const exam = await Exam.findById(id);
-        const questions = await Question.find({ examId: id });
+        const questions = await Question.find({ examId: id }); // it gives all the questions for the specific exam like if recat exam 
 
         if (!exam) {
             return res.status(404).json({ message: 'Exam not found' });
@@ -95,26 +140,22 @@ exports.getExamById = async (req, res) => {
         console.error(error);
         res.status(500).json({ message: 'Error fetching exam', error });
     }
-};
-
-//update exam
-exports.updateExam = async (req, res) => {
+},
+updateExam :async (req, res) => {
     try {
         const exam = await Exam.findOne({ _id: req.params.id });
         if (!exam) {
             return res.status(404).json({ message: 'Exam not found' });
         }
         // Update the exam fields with the new data from the request body
-        Object.assign(exam, req.body); // Use Object.assign to update fields
+        Object.assign(exam, req.body); // Use Object.assign to update fields 
         await exam.save();
         res.status(200).json({ message: 'Exam updated successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Error updating exam', error });
     }
-};
-
-//delete
-exports.deleteExam = async (req, res) => {
+},
+deleteExam : async (req, res) => {
     try {
         const exam = await Exam.findOne({ _id: req.params.id });
         if (!exam) {
@@ -125,11 +166,10 @@ exports.deleteExam = async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: 'Error deleting exam', error });
     }
-};
-
+},
 
 //exam submit
-exports.submitExam = async (req, res) => {
+submitExam : async (req, res) => {
     try {
         const { examId, answers, warningCount } = req.body;
         const { userId } = req.user;
@@ -147,7 +187,8 @@ exports.submitExam = async (req, res) => {
         const questions = await Question.find({ examId });
 
         questions.forEach((question) => {
-            const userAnswer = answers[question._id];
+            
+            const userAnswer = answers[question._id.toString()];
 
             // Skip if no answer provided
             if (!userAnswer) return;
@@ -206,6 +247,8 @@ exports.submitExam = async (req, res) => {
             warningCount,
         });
         await submission.save();
+        console.log("Answers received:", answers);
+
 
         return res.status(201).json({
             message: 'Exam submitted successfully',
@@ -216,10 +259,9 @@ exports.submitExam = async (req, res) => {
         console.error(error);
         return res.status(500).json({ message: 'Failed to submit exam' });
     }
-};
-
+},
 // Controller function to get all submissions by a user
-exports.getUserSubmissions = async (req, res) => {
+getUserSubmissions :async (req, res) => {
     try {
         const userId = req.user.userId; // Assuming user info is available in req.user after authentication
 
@@ -295,4 +337,7 @@ exports.getUserSubmissions = async (req, res) => {
             message: 'Failed to retrieve submissions.',
         });
     }
-};
+}
+
+}
+module.exports = examController;
