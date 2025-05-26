@@ -5,71 +5,78 @@ const Question=require('../models/Question')
 
 examController = {
     createExam: async (req, res) => {
-    try {
-        const { name, title, date, duration, totalQuestions, description, totalMarks, questions, permittedStudentIds } = req.body;
+        try {
+            const { name, title, date, duration, totalQuestions, description, totalMarks,questions } = req.body;
 
-        const createdBy = req.user ? req.user.userId : null;
 
-        const newExam = new Exam({
-            name,
-            title,
-            date,
-            description,
-            duration,
-            totalMarks,
-            totalQuestions,
-            questions,
-            createdBy
-        });
+            const createdBy = req.user ? req.user.userId : null; // this is who logged in their userId  it comes from authmiddlewre  like req.user=decoded 
+            const newExam = new Exam({
+                name: name,
+                title: title,
+                date: date,
+                description: description,
+                duration: duration,
+                totalMarks: totalMarks,
+                totalQuestions: totalQuestions,
+                questions: questions,
+                createdBy: createdBy // The user who is logged in and creating this exam
+            });
+            await newExam.save();
+             const populatedExam = await newExam.populate(['createdBy','questions']);
+            return res.status(201).json({ message: 'Exam Created successfully', exam:populatedExam });
 
-        await newExam.save();
-        const populatedExam = await newExam.populate(['createdBy', 'questions']);
+        } catch (error) {
+            return res.status(500).json({ message: 'error creating Exam', error: error.message });
 
-        // Give permission to selected students or all students
-        if (permittedStudentIds && permittedStudentIds.length > 0) {
-            await User.updateMany(
-                { _id: { $in: permittedStudentIds } },
-                {  $addToSet: { examPermission: newExam._id }  }
-            );
-        } else {
-            await User.updateMany(
-                { role: 'student' },
-                { $addToSet: { examPermission: newExam._id }  }
-            );
         }
-
-        return res.status(201).json({ message: 'Exam Created successfully', exam: populatedExam });
-    } catch (error) {
-        return res.status(500).json({ message: 'Error creating exam', error: error.message });
-    }
-},
-
+    },
    
     // Get all exams
-    getExams : async (req, res) => {
+    // getExams function with debug logs
+getExams: async (req, res) => {
     const { userId, role } = req.user;
     let exams;
     let submittedData = [];
     let user;
 
     try {
+        console.log("=== DEBUG LOGS ===");
+        console.log("User ID:", userId);
+        console.log("User Role:", role);
+
         if (role === "student") {
             // Fetch the user with exam permissions
             user = await User.findById(userId)
-                .select('_id name examPermission role')
+                .select('_id name examPermission role email')
                 .exec();
 
-            if (!user || !user.examPermission || user.examPermission.length === 0) {
+            console.log("Found User:", user);
+            console.log("User examPermission:", user?.examPermission);
+            console.log("examPermission length:", user?.examPermission?.length);
+
+            if (!user) {
+                console.log("ERROR: User not found in database");
+                return res.status(404).json({ message: 'User not found' });
+            }
+
+            if (!user.examPermission || user.examPermission.length === 0) {
+                console.log("WARNING: User has no exam permissions");
                 return res.status(200).json({
                     success: true,
                     exams: [],
                     submittedData: [],
-                    user
+                    user,
+                    message: "No exam permissions granted to this student"
                 });
             }
 
-            //  Only return exams the student is allowed to see
+            console.log("Searching for exams with IDs:", user.examPermission);
+            
+            // Only return exams the student is allowed to see
             exams = await Exam.find({ _id: { $in: user.examPermission } });
+            
+            console.log("Found exams:", exams.length);
+            console.log("Exam names:", exams.map(exam => exam.name));
 
             // Fetch the student's submissions
             submittedData = await Submission.find({ userId })
@@ -82,15 +89,21 @@ examController = {
                     select: 'examPermission'
                 });
 
+            console.log("Submitted data:", submittedData.length);
+
         } else if (role === "admin") {
             exams = await Exam.find(); // Admin gets all exams
+            console.log("Admin - Found exams:", exams.length);
         } else {
+            console.log("ERROR: Invalid role -", role);
             return res.status(403).json({ message: 'Unauthorized access' });
         }
 
+        console.log("=== END DEBUG LOGS ===");
         res.status(200).json({ success: true, exams, submittedData, user });
 
     } catch (error) {
+        console.error("ERROR in getExams:", error);
         res.status(500).json({ message: 'Error fetching exams', error: error.message });
     }
 },
@@ -127,8 +140,7 @@ getExamById : async (req, res) => {
                 options: question.options,
                 difficulty: question.difficulty,
                 // Only include correctAnswer if needed (might want to exclude for student view)
-                // correctAnswer: question.correctAnswer
-                correctAnswer: req.user?.role === 'admin' ? question.correctAnswer : undefined
+                correctAnswer: question.correctAnswer
             })),
             metadata: {
                 createdAt: exam.createdAt,
@@ -149,10 +161,7 @@ updateExam :async (req, res) => {
             return res.status(404).json({ message: 'Exam not found' });
         }
         // Update the exam fields with the new data from the request body
-        // Object.assign(exam, req.body); // Use Object.assign to update fields 
-        if (req.user.role !== 'admin' && req.user.userId !== exam.createdBy.toString()) {
-    return res.status(403).json({ message: 'Not authorized to update this exam' });
-}
+        Object.assign(exam, req.body); // Use Object.assign to update fields 
         await exam.save();
         res.status(200).json({ message: 'Exam updated successfully' });
     } catch (error) {
