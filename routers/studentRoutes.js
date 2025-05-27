@@ -8,17 +8,17 @@ const studentRouter = express.Router();
 
 studentRouter.get('/', authenticate(), getAllStudents );
 studentRouter.delete('/:id', authenticate(), deleteStudent );
-studentRouter.put('/permission/:id', authenticate('admin'), updateExamPermission);
+studentRouter.put('/permission/:id', authenticate(), updateExamPermission);
 
 //role update
 studentRouter.put('/role/:id', authenticate(), updateRole);
 
 //activity
 studentRouter.post('/activity', authenticate(), createActivity);
-studentRouter.get('/activity', authenticate('admin'), getAllStudentActivities);
+studentRouter.get('/activity', authenticate(), getAllStudentActivities);
 
 // proctor
-studentRouter.post('/proctor', authenticate('admin'), createProctor);
+studentRouter.post('/proctor', authenticate(), createProctor);
 studentRouter.get('/proctor/:id', authenticate(), getProctorByUserId);
 
 
