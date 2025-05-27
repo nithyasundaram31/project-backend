@@ -362,7 +362,8 @@ const Question = require('../models/Question');
 const Submission = require('../models/Submission');
 const User = require('../models/User');
 
-exports.createExam = async (req, res) => {
+  const  examController={ 
+createExam :async (req, res) => {
     try {
         const exam = new Exam({ ...req.body, createdBy: req.user?.userId });
         await exam.save();
@@ -370,10 +371,10 @@ exports.createExam = async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: 'Error creating exam', error });
     }
-};
+},
 
 // Get all exams
-exports.getExams = async (req, res) => {
+getExams : async (req, res) => {
     const { userId, role } = req.user; // Extract userId and role from req.user
     let exams;
     let submittedData;
@@ -408,10 +409,10 @@ exports.getExams = async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: 'Error fetching exams', error }); // Handle server errors
     }
-};
+},
 
 // Get exam by ID
-exports.getExamById = async (req, res) => {
+getExamById : async (req, res) => {
     try {
         const { id } = req.params; // Get the exam ID from the request parameters
         // Find the exam by ID and populate the questions
@@ -454,10 +455,10 @@ exports.getExamById = async (req, res) => {
         console.error(error);
         res.status(500).json({ message: 'Error fetching exam', error });
     }
-};
+},
 
 //update exam
-exports.updateExam = async (req, res) => {
+updateExam : async (req, res) => {
     try {
         const exam = await Exam.findOne({ _id: req.params.id });
         if (!exam) {
@@ -470,10 +471,10 @@ exports.updateExam = async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: 'Error updating exam', error });
     }
-};
+},
 
 //delete
-exports.deleteExam = async (req, res) => {
+deleteExam : async (req, res) => {
     try {
         const exam = await Exam.findOne({ _id: req.params.id });
         if (!exam) {
@@ -484,11 +485,11 @@ exports.deleteExam = async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: 'Error deleting exam', error });
     }
-};
+},
 
 
 //exam submit
-exports.submitExam = async (req, res) => {
+submitExam : async (req, res) => {
     try {
         const { examId, answers, warningCount } = req.body;
         const { userId } = req.user;
@@ -575,10 +576,10 @@ exports.submitExam = async (req, res) => {
         console.error(error);
         return res.status(500).json({ message: 'Failed to submit exam' });
     }
-};
+},
 
 // Controller function to get all submissions by a user
-exports.getUserSubmissions = async (req, res) => {
+getUserSubmissions : async (req, res) => {
     try {
         const userId = req.user.userId; // Assuming user info is available in req.user after authentication
 
@@ -653,5 +654,8 @@ exports.getUserSubmissions = async (req, res) => {
             success: false,
             message: 'Failed to retrieve submissions.',
         });
-    }
+ }
+}
 };
+
+module.exports = examController;

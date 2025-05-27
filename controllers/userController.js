@@ -160,7 +160,9 @@ const bcrypt = require('bcryptjs');
 const createToken = require('../utils/tokenUtils')
 
 // Register a new user (Student or Admin)
-exports.registerUser = async (req, res) => {
+
+const userController={
+registerUser : async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
         //Hashing the Password
@@ -170,10 +172,10 @@ exports.registerUser = async (req, res) => {
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
-};
+},
 
 // Login user (Student or Admin)
-exports.loginUser = async (req, res) => {
+loginUser : async (req, res) => {
 
     try {
         const { email, password } = req.body;
@@ -198,20 +200,20 @@ exports.loginUser = async (req, res) => {
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
-};
+},
 
 // Get user profile (Student or Admin)
-exports.getProfile = async (req, res) => {
+getProfile : async (req, res) => {
     try {
         const user = await User.findById(req.user.userId).select('-password');
         res.json(user);
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
-};
+},
 
 // Update student profile
-exports.updateProfile = async (req, res) => {
+updateProfile : async (req, res) => {
     const { id } = req.params;
     try {
         const user = await User.findById(id);
@@ -229,10 +231,10 @@ exports.updateProfile = async (req, res) => {
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
-};
+},
 
 // Admin: Get all students
-exports.getAllStudents = async (req, res) => {
+getAllStudents : async (req, res) => {
     try {
         if (req.user.role !== 'admin') {
             return res.status(403).json({ error: 'Only admins can view all students' });
@@ -242,10 +244,10 @@ exports.getAllStudents = async (req, res) => {
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
-};
+},
 
 // Admin: Update student details
-exports.updateStudent = async (req, res) => {
+updateStudent :async (req, res) => {
     try {
         if (req.user.role !== 'admin') {
             return res.status(403).json({ error: 'Only admins can update student details' });
@@ -262,4 +264,7 @@ exports.updateStudent = async (req, res) => {
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
+  }
 };
+
+module.exports = userController;

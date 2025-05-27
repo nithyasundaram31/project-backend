@@ -1,5 +1,5 @@
 const express = require('express');
-const { registerUser, loginUser, getProfile, updateProfile, getAllStudents,  updateStudentById } = require('../controllers/userController');
+const { registerUser, loginUser, getProfile, updateProfile, getAllStudents,  updateStudent } = require('../controllers/userController');
 const   authenticate  = require('../middlewares/auth');
 
 
@@ -15,7 +15,7 @@ userRoute.put('/profile/:id',authenticate(), updateProfile );
 
 //admin routes
 userRoute.get('/admin/students',authenticate('admin'), getAllStudents );
-userRoute.put('/admin/student/:id',authenticate('admin'), updateStudentById );
+userRoute.put('/admin/student/:id',authenticate('admin'), updateStudent );
 
 
 
