@@ -31,43 +31,84 @@ examController = {
         }
     },
    
-   // Get all exams
-getExams :async (req, res) => {
-    const { userId, role } = req.user; // Extract userId and role from req.user
+    // Get all exams
+    // getExams function with debug logs
+getExams: async (req, res) => {
+    const { userId, role } = req.user;
     let exams;
-    let submittedData;
+    let submittedData = [];
     let user;
+
     try {
+        console.log("=== DEBUG LOGS ===");
+        console.log("User ID:", userId);
+        console.log("User Role:", role);
+
         if (role === "student") {
-            // Students should get all exams
-            exams = await Exam.find();
-            //get exam permission
-            user = await User.find({ _id: userId })
-                .select('_id examPermission role')
+            // Fetch the user with exam permissions
+            user = await User.findById(userId)
+                .select('_id name examPermission role email')
                 .exec();
-            //get exam submite
+
+            console.log("Found User:", user);
+            console.log("User examPermission:", user?.examPermission);
+            console.log("examPermission length:", user?.examPermission?.length);
+
+            if (!user) {
+                console.log("ERROR: User not found in database");
+                return res.status(404).json({ message: 'User not found' });
+            }
+
+            if (!user.examPermission || user.examPermission.length === 0) {
+                console.log("WARNING: User has no exam permissions");
+                return res.status(200).json({
+                    success: true,
+                    exams: [],
+                    submittedData: [],
+                    user,
+                    message: "No exam permissions granted to this student"
+                });
+            }
+
+            console.log("Searching for exams with IDs:", user.examPermission);
+            
+            // Only return exams the student is allowed to see
+            exams = await Exam.find({ _id: { $in: user.examPermission } });
+            
+            console.log("Found exams:", exams.length);
+            console.log("Exam names:", exams.map(exam => exam.name));
+
+            // Fetch the student's submissions
             submittedData = await Submission.find({ userId })
                 .populate({
                     path: 'examId',
-                    select: 'name' // Only select the 'name' field from the 'examId'
+                    select: 'name'
                 })
                 .populate({
                     path: 'userId',
-                    select: 'examPermission' // Only select the 'examPermission' field from the 'userId'
-                })
-                .exec();
+                    select: 'examPermission'
+                });
+
+            console.log("Submitted data:", submittedData.length);
+
         } else if (role === "admin") {
-            // Admins should get only the exams they created
-            exams = await Exam.find();
+            exams = await Exam.find(); // Admin gets all exams
+            console.log("Admin - Found exams:", exams.length);
         } else {
+            console.log("ERROR: Invalid role -", role);
             return res.status(403).json({ message: 'Unauthorized access' });
         }
 
-        res.status(200).json({ success: true, exams, submittedData, user }); // Send the exams data as JSON
+        console.log("=== END DEBUG LOGS ===");
+        res.status(200).json({ success: true, exams, submittedData, user });
+
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching exams', error }); // Handle server errors
+        console.error("ERROR in getExams:", error);
+        res.status(500).json({ message: 'Error fetching exams', error: error.message });
     }
 },
+
+
 // Get exam by ID
 getExamById : async (req, res) => {
     try {
