@@ -16,7 +16,7 @@
 // module.exports=examRouter;
 
 const express = require('express');
-const authenticate = require('../middlewares/auth');
+const authenticate = require('../middlewares/auth')
 const { 
     createExam, 
     getExams, 
