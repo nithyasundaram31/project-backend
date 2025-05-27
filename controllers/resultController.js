@@ -2,7 +2,8 @@ const User = require('../models/User'); // Adjust the path as necessary
 const Submission = require('../models/Submission'); // Adjust the path as necessary
 const Exam = require('../models/Exam'); // Adjust the path as necessary
 
-exports.getResultById = async (req, res) => {
+const resultController={
+getResultById : async (req, res) => {
     const { id } = req.params; // Extract userId from request parameters
 
     try {
@@ -55,4 +56,5 @@ exports.getResultById = async (req, res) => {
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
-};
+}};
+module.exports=resultController;
