@@ -56,31 +56,52 @@ createExam :async (req, res) => {
 //     }
 // },
 
+// Replace your getExams function with this corrected version
+
 getExams: async (req, res) => {
     const { userId, role } = req.user;
 
     try {
         let exams = [];
+        let user = null;
+        let submittedData = [];
 
         if (role === "student") {
-            const currentDate = new Date();
-            exams = await Exam.find({
-                published: true,
-                date: { $gt: currentDate }
-            });
+            // First, get user's exam permission
+            user = await User.findById(userId).select('_id examPermission role');
+            
+            // Only show exams if user has permission
+            if (user && user.examPermission === true) {
+                const currentDate = new Date();
+                exams = await Exam.find({
+                    published: true,
+                    date: { $gt: currentDate }
+                });
+
+                // Get submitted exams data
+                submittedData = await Submission.find({ userId })
+                    .populate({
+                        path: 'examId',
+                        select: 'name'
+                    })
+                    .exec();
+            }
         } else if (role === "admin") {
             exams = await Exam.find({ createdBy: userId });
         } else {
             return res.status(403).json({ message: "Unauthorized access" });
         }
 
-        return res.status(200).json({ success: true, exams });
+        return res.status(200).json({ 
+            success: true, 
+            exams, 
+            user,
+            submittedData 
+        });
     } catch (error) {
         res.status(500).json({ message: "Error fetching exams", error });
     }
 },
-
-
 
 // Get exam by ID
 // getExamById : async (req, res) => {
