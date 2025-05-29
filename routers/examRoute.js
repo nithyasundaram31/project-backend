@@ -52,7 +52,7 @@ examRouter.post('/submit', authenticate(), submitExam);
 // Get user submissions
 examRouter.get('/submissions', authenticate(), getUserSubmissions);
 
-// Test route - authentication இல்லாமல்
+// Test route - authentication 
 examRouter.get('/test', (req, res) => {
     res.json({ message: 'Exam route working!' });
 });
