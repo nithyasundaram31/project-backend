@@ -12,7 +12,7 @@ const resultRouter = require("./routers/resultsRoute");
 const app = express();
 
 app.use(cors({
-    origin: 'https://starlit-pika-8cfa24.netlify.app', // Replace with your frontend URL
+    origin: 'https://friendly-snickerdoodle-bffda5.netlify.app', // Replace with your frontend URL
     // credentials: true, // Allow credentials to be sent
 }));
 
