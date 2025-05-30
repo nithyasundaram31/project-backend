@@ -41,18 +41,17 @@ const questionController = {
 
     // Get a question by ID
     getQuestionById: async (req, res) => {
-        try {
-            const { id } = req.params;
-            const question = await Question.findById(id).populate('userId', 'name email'); //for better understanding  
-            if (!question) {
-                return res.stats(404).json({ message: 'question not fund' });
-
-            }
-            return res.status(200).json(question);
-        } catch (error) {
-            return res.stats(400).json({ error: error.message });
+    try {
+        const { id } = req.params;
+        const question = await Question.findById(id).populate('userId', 'name email');
+        if (!question) {
+            return res.status(404).json({ message: 'Question not found' });
         }
-    },
+        return res.status(200).json(question);
+    } catch (error) {
+        return res.status(400).json({ error: error.message });
+    }
+},
     // Update a question
     updateQuestion: async(req,res)=>{
         try{

@@ -33,21 +33,22 @@ const studentController = {
   // Update exam permission
 
   updateExamPermission: async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { examPermission } = req.body; // we give the examPermission:true in req.body
-      const student = await Student.findByIdAndUpdate(id)
-      if (!student) {
-        return res.status(404).json({ message: " Only students can have exam permissions updated" });
-      }
-      student.examPermission = examPermission
-      await student.save();
-
-      res.status(200).json({ message: 'Permission updated successfully' });
-    } catch (error) {
-
+  try {
+    const { id } = req.params;
+    const { examPermission } = req.body;
+    const student = await Student.findByIdAndUpdate(
+      id,
+      { examPermission: examPermission },
+      { new: true }
+    );
+    if (!student) {
+      return res.status(404).json({ message: "Only students can have exam permissions updated" });
     }
-  },
+    res.status(200).json({ message: 'Permission updated successfully' });
+  } catch (error) {
+    return res.status(500).json({ message: 'Error updating permission', error: error.message });
+  }
+},
 
   //handle role change
   updateRole: async (req, res) => {
