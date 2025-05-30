@@ -13,7 +13,7 @@ const app = express();
 
 app.use(cors({
     origin: 'https://lucent-muffin-667a3a.netlify.app', // Replace with your frontend URL
-    // credentials: true, // Allow credentials to be sent
+    credentials: true, // Allow credentials to be sent
 }));
 
 // Middleware to parse JSON request bodies
