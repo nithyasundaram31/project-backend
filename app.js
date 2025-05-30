@@ -12,7 +12,7 @@ const resultRouter = require("./routers/resultsRoute");
 const app = express();
 
 app.use(cors({
-    origin: 'https://lucent-muffin-667a3a.netlify.app', // Replace with your frontend URL
+    origin: 'https://creative-liger-43d611.netlify.app', // Replace with your frontend URL
     credentials: true, // Allow credentials to be sent
 }));
 
