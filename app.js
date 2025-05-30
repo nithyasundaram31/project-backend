@@ -12,7 +12,7 @@ const resultRouter = require("./routers/resultsRoute");
 const app = express();
 
 app.use(cors({
-    origin: 'https://moonlit-kitten-fa64a0.netlify.app', // Replace with your frontend URL
+    origin: 'https://magical-brigadeiros-fcce19.netlify.app', // Replace with your frontend URL
     // credentials: true, // Allow credentials to be sent
 }));
 
