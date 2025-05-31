@@ -2,7 +2,8 @@ const User = require('../models/User'); // Adjust the path as necessary
 const Submission = require('../models/Submission'); // Adjust the path as necessary
 const Exam = require('../models/Exam'); // Adjust the path as necessary
 
-exports.getResultById = async (req, res) => {
+const resultController={
+getResultById : async (req, res) => {
     const { id } = req.params; // Extract userId from request parameters
 
     try {
@@ -13,7 +14,7 @@ exports.getResultById = async (req, res) => {
         }
 
         // Find submissions for the specific user
-        const results = await Submission.find({ userId: id }); // Fetch submissions for the user
+        const results = await Submission.find({ userId: id }); // Fetch submissions for the user {userId} key name we give anyname 
 
         // Check if there are any results for the specified user
         if (results.length === 0) {
@@ -55,4 +56,5 @@ exports.getResultById = async (req, res) => {
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
-};
+}};
+module.exports=resultController;

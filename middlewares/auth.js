@@ -1,3 +1,5 @@
+
+const jwt = require('jsonwebtoken');
 const authenticate = (role) => {
   return (req, res, next) => {
     const strToken = req.headers.authorization?.split(' ')[1];
