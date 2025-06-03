@@ -2,6 +2,7 @@ const Exam = require('../models/Exam');
 const Question = require('../models/Question');
 const Submission = require('../models/Submission');
 const User = require('../models/User');
+const mongoose = require('mongoose'); 
 
 exports.createExam = async (req, res) => {
     try {
@@ -46,52 +47,8 @@ exports.getExams = async (req, res) => {
     }
 };
 
-// Get exam by ID
-// exports.getExamById = async (req, res) => {
-//     try {
-//         const { id } = req.params;
-//         const exam = await Exam.findById(id);
-//         const questions = await Question.find({ examId: id });
-//         // const questions = await Question.find({ examId: mongoose.Types.ObjectId(id) });
-// console.log("EXAM ID: ", id);
-// console.log("Fetching Exam...");
-// console.log("Exam Object:", exam);
-// console.log("Questions:", questions);
-//         if (!exam) {
-//             return res.status(404).json({ message: 'Exam not found' });
-//         }
-//         const formattedExam = {
-//             examData: {
-//                 id: exam._id,
-//                 name: exam.name,
-//                 date: exam.date,
-//                 duration: exam.duration,
-//                 totalMarks: exam.totalMarks,
-//                 totalQuestions: exam.totalQuestions,
-//                 description: exam.description,
-//                 createdBy: exam.createdBy
-//             },
-//             questions: questions.map((question, index) => ({
-//                 questionNumber: index + 1,
-//                 id: question._id,
-//                 question: question.question,
-//                 questionType: question.questionType,
-//                 options: question.options,
-//                 difficulty: question.difficulty,
-//                 correctAnswer: question.correctAnswer
-//             })),
-//             metadata: {
-//                 createdAt: exam.createdAt,
-//                 updatedAt: exam.updatedAt
-//             }
-//         };
-//         res.status(200).json(formattedExam);
-//     } catch (error) {
-//         console.error(error);
-//         res.status(500).json({ message: 'Error fetching exam', error });
-//     }
-// };
-const mongoose = require('mongoose'); // 
+          
+
 exports.getExamById = async (req, res) => {
     const { id } = req.params;
 
@@ -314,7 +271,9 @@ exports.getUserSubmissions = async (req, res) => {
 
             return {
                 ...submission.toObject(),
-                questions: questionsWithUserAnswers
+                questions: questionsWithUserAnswers,
+                totalQuestions: submission.examId.totalQuestions || questions.length,
+    examName: submission.examId.name,
             };
         }));
 

@@ -15,7 +15,7 @@ app.use(cors({
     // origin: 'https://creative-liger-43d611.netlify.app', // Replace with your frontend URL
     // credentials: true, // Allow credentials to be sent
 
-    origin: 'https://venerable-selkie-efcbc2.netlify.app', // your Netlify frontend URL
+    origin: 'http://localhost:5173', // your Netlify frontend URL
   credentials: true, 
 //   methods: ['GET', 'POST', 'PUT', 'DELETE'],
 //   allowedHeaders: ['Content-Type', 'Authorization'], 
