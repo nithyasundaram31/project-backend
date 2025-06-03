@@ -9,6 +9,7 @@ router.post('/add', authenticate(), addQuestion);
 // Route to get all questions
 router.get('/', authenticate(), getAllQuestions);
 
+
 // Route to get a specific question by ID
 router.get('/:id', authenticate(), getQuestionById);
 

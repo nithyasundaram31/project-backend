@@ -68,7 +68,7 @@ exports.updateRole = async (req, res) => {
 
 // Create or Update Student Activity
 exports.createActivity = async (req, res) => {
-    const { acivityType, examId, exam, userId } = req.body;
+    const { activityType, examId, exam, userId } = req.body;
 
     try {
         // Find the student by ID from request parameters
@@ -82,7 +82,7 @@ exports.createActivity = async (req, res) => {
             exam: exam,
             name: student.name,
             email: student.email,
-            acivityType: acivityType,
+            activityType: activityType,
             examPermission: req.body.examPermission || true
         };
 

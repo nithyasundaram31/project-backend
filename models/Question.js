@@ -1,5 +1,7 @@
+// 
 
 const mongoose = require('mongoose');
+
 const questionSchema = new mongoose.Schema({
     question: {
         type: String,
@@ -7,22 +9,24 @@ const questionSchema = new mongoose.Schema({
     },
     questionType: {
         type: String,
-        enum: ['multiple-choice', 'true-false', 'short-answer'], // Define allowed types
+        enum: ['multiple-choice', 'true-false', 'short-answer'],
         required: true,
     },
     options: {
-        type: [String], // Only required for multiple-choice
+        type: [String],
         validate: {
             validator: function (options) {
-                // Options are only required for multiple-choice questions
-                return this.questionType !== 'multiple-choice' || (options && options.length >= 2);
+                if (this.questionType === 'multiple-choice') {
+                    return Array.isArray(options) && options.length >= 2;
+                }
+                return !options || options.length === 0;
             },
-            message: 'Multiple-choice questions must have at least two options.',
+            message: 'Options are only allowed for multiple-choice questions with at least two choices.',
         },
     },
     correctAnswer: {
         type: String,
-        required: true, // Consider making this required to ensure there is always a correct answer
+        required: true,
     },
     difficulty: {
         type: String,
@@ -30,18 +34,14 @@ const questionSchema = new mongoose.Schema({
         required: true,
     },
     exam: {
-        type: String,
-        required: true,
-    },
-    examId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Exam', // Reference to the Exam model
+        ref: 'Exam',
         required: true,
     },
     userId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User', // Assuming you have a User model
-        required: true
+        ref: 'User',
+        required: true,
     }
 }, { timestamps: true });
 

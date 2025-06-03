@@ -15,54 +15,99 @@ exports.createExam = async (req, res) => {
 
 // Get all exams
 exports.getExams = async (req, res) => {
-    const { userId, role } = req.user; // Extract userId and role from req.user
+    const { userId, role } = req.user;
     let exams;
     let submittedData;
     let user;
     try {
         if (role === "student") {
-            // Students should get all exams
             exams = await Exam.find();
-            //get exam permission
             user = await User.find({ _id: userId })
                 .select('_id examPermission role')
                 .exec();
-            //get exam submite
             submittedData = await Submission.find({ userId })
                 .populate({
                     path: 'examId',
-                    select: 'name' // Only select the 'name' field from the 'examId'
+                    select: 'name'
                 })
                 .populate({
                     path: 'userId',
-                    select: 'examPermission' // Only select the 'examPermission' field from the 'userId'
+                    select: 'examPermission'
                 })
                 .exec();
         } else if (role === "admin") {
-            // Admins should get only the exams they created
             exams = await Exam.find();
         } else {
             return res.status(403).json({ message: 'Unauthorized access' });
         }
-
-        res.status(200).json({ success: true, exams, submittedData, user }); // Send the exams data as JSON
+        res.status(200).json({ success: true, exams, submittedData, user });
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching exams', error }); // Handle server errors
+        res.status(500).json({ message: 'Error fetching exams', error });
     }
 };
 
 // Get exam by ID
+// exports.getExamById = async (req, res) => {
+//     try {
+//         const { id } = req.params;
+//         const exam = await Exam.findById(id);
+//         const questions = await Question.find({ examId: id });
+//         // const questions = await Question.find({ examId: mongoose.Types.ObjectId(id) });
+// console.log("EXAM ID: ", id);
+// console.log("Fetching Exam...");
+// console.log("Exam Object:", exam);
+// console.log("Questions:", questions);
+//         if (!exam) {
+//             return res.status(404).json({ message: 'Exam not found' });
+//         }
+//         const formattedExam = {
+//             examData: {
+//                 id: exam._id,
+//                 name: exam.name,
+//                 date: exam.date,
+//                 duration: exam.duration,
+//                 totalMarks: exam.totalMarks,
+//                 totalQuestions: exam.totalQuestions,
+//                 description: exam.description,
+//                 createdBy: exam.createdBy
+//             },
+//             questions: questions.map((question, index) => ({
+//                 questionNumber: index + 1,
+//                 id: question._id,
+//                 question: question.question,
+//                 questionType: question.questionType,
+//                 options: question.options,
+//                 difficulty: question.difficulty,
+//                 correctAnswer: question.correctAnswer
+//             })),
+//             metadata: {
+//                 createdAt: exam.createdAt,
+//                 updatedAt: exam.updatedAt
+//             }
+//         };
+//         res.status(200).json(formattedExam);
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({ message: 'Error fetching exam', error });
+//     }
+// };
+const mongoose = require('mongoose'); // 
 exports.getExamById = async (req, res) => {
-    try {
-        const { id } = req.params; // Get the exam ID from the request parameters
-        // Find the exam by ID and populate the questions
-        const exam = await Exam.findById(id);
-        const questions = await Question.find({ examId: id });
+    const { id } = req.params;
 
+    try {
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ message: 'Invalid exam ID' });
+        }
+
+        const exam = await Exam.findById(id);
         if (!exam) {
             return res.status(404).json({ message: 'Exam not found' });
         }
-        // Transform the data structure for better organization
+
+        // Now fetch questions using the correct field `exam`
+        const questions = await Question.find({ exam: id });
+
         const formattedExam = {
             examData: {
                 id: exam._id,
@@ -81,7 +126,6 @@ exports.getExamById = async (req, res) => {
                 questionType: question.questionType,
                 options: question.options,
                 difficulty: question.difficulty,
-                // Only include correctAnswer if needed (might want to exclude for student view)
                 correctAnswer: question.correctAnswer
             })),
             metadata: {
@@ -92,20 +136,20 @@ exports.getExamById = async (req, res) => {
 
         res.status(200).json(formattedExam);
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Error fetching exam', error });
+        console.error("getExamById Error: ", error);
+        res.status(500).json({ message: 'Error fetching exam', error: error.message });
     }
 };
 
-//update exam
+
+// Update exam
 exports.updateExam = async (req, res) => {
     try {
         const exam = await Exam.findOne({ _id: req.params.id });
         if (!exam) {
             return res.status(404).json({ message: 'Exam not found' });
         }
-        // Update the exam fields with the new data from the request body
-        Object.assign(exam, req.body); // Use Object.assign to update fields
+        Object.assign(exam, req.body);
         await exam.save();
         res.status(200).json({ message: 'Exam updated successfully' });
     } catch (error) {
@@ -113,7 +157,7 @@ exports.updateExam = async (req, res) => {
     }
 };
 
-//delete
+// Delete exam
 exports.deleteExam = async (req, res) => {
     try {
         const exam = await Exam.findOne({ _id: req.params.id });
@@ -127,42 +171,41 @@ exports.deleteExam = async (req, res) => {
     }
 };
 
-
-//exam submit
+// Exam submit
 exports.submitExam = async (req, res) => {
     try {
         const { examId, answers, warningCount } = req.body;
         const { userId } = req.user;
 
-        // Fetch the exam
         const exam = await Exam.findById(examId);
         if (!exam) {
             return res.status(404).json({ message: 'Exam not found' });
         }
+        // Prevent re-submission
+const existingSubmission = await Submission.findOne({ examId, userId });
+if (existingSubmission) {
+    return res.status(400).json({ message: 'You have already submitted this exam.' });
+}
+
 
         let correctAnswers = 0;
         let totalMarks = 0;
 
-        // Find questions by the provided examId
         const questions = await Question.find({ examId });
 
         questions.forEach((question) => {
             const userAnswer = answers[question._id];
 
-            // Skip if no answer provided
             if (!userAnswer) return;
 
             switch (question.questionType) {
                 case 'true-false':
-                    // Convert both answers to lowercase for case-insensitive comparison
                     if (userAnswer.toLowerCase() === question.correctAnswer.toLowerCase()) {
                         correctAnswers++;
                         totalMarks += 1;
                     }
                     break;
-
                 case 'multiple-choice':
-                    // Convert both answers to the same case and trim whitespace
                     const normalizedUserAnswer = userAnswer.toLowerCase().trim();
                     const normalizedCorrectAnswer = question.correctAnswer.toLowerCase().trim();
 
@@ -171,13 +214,11 @@ exports.submitExam = async (req, res) => {
                         totalMarks += 1;
                     }
                     break;
-
-                // Add more question types here if needed
                 default:
                     console.warn(`Unhandled question type: ${question.questionType}`);
             }
-        })
-        // Assign a grade based on totalMarks (adjust the scale as per your requirements)
+        });
+
         let grade;
         const totalQuestions = questions.length;
         const percentage = (totalMarks / totalQuestions) * 100;
@@ -189,12 +230,11 @@ exports.submitExam = async (req, res) => {
         } else if (percentage >= 50) {
             grade = 'C';
         } else if (percentage >= 36) {
-            grade = 'D'; // Pass, but below the standard (not a failing grade)
+            grade = 'D';
         } else {
-            grade = 'F'; // Fail for scores less than 35
+            grade = 'F';
         }
 
-        // Save the submission
         const submission = new Submission({
             examId,
             userId,
@@ -221,73 +261,66 @@ exports.submitExam = async (req, res) => {
 // Controller function to get all submissions by a user
 exports.getUserSubmissions = async (req, res) => {
     try {
-        const userId = req.user.userId; // Assuming user info is available in req.user after authentication
+        const userId = req.user.userId;
 
-        // Fetch all submissions made by this user
         const submissions = await Submission.find({ userId })
             .populate({
-                path: 'examId', // The field in your Submission schema that references the Exam model
-                select: 'name totalMarks totalQuestions' // Fields from the Exam model to include
+                path: 'examId',
+                select: 'name totalMarks totalQuestions'
             })
             .exec();
 
-        // Check if there are submissions
-        if (!submissions || submissions.length === 0) {
+        if(!submissions || submissions.length === 0) {
             return res.status(404).json({ message: 'No submissions found for this user.' });
         }
-
-        // Helper function to determine if the user's answer is correct
+                    
         const determineIfCorrect = (question, userAnswer) => {
             if (!userAnswer) return false;
+            const correctAnswerNormalized = question.correctAnswer?.toString().trim().toLowerCase();
+            const userAnswerNormalized = userAnswer?.toString().trim().toLowerCase();
 
-            // Convert both correctAnswer and userAnswer to lowercase strings for comparison
-            const correctAnswerNormalized = question.correctAnswer.toString().trim().toLowerCase();
-            const userAnswerNormalized = userAnswer.toString().trim().toLowerCase();
-
-            // If the answer is "true" or "false", convert to boolean for comparison
             const booleanMap = { "true": true, "false": false };
-
             const correctAnswerBoolean = booleanMap[correctAnswerNormalized] !== undefined
                 ? booleanMap[correctAnswerNormalized]
                 : correctAnswerNormalized;
-
             const userAnswerBoolean = booleanMap[userAnswerNormalized] !== undefined
                 ? booleanMap[userAnswerNormalized]
                 : userAnswerNormalized;
-
-            // Compare the normalized values
             return correctAnswerBoolean === userAnswerBoolean;
         };
 
+        // Defensive: filter out null/invalid submissions
+        const validSubmissions = submissions.filter(sub => sub && sub.examId);
 
-        // Fetch questions and user's answers for each submission
-        const submissionsWithQuestions = await Promise.all(submissions.map(async (submission) => {
-            // Fetch the questions for the specific exam
+        const submissionsWithQuestions = await Promise.all(validSubmissions.map(async (submission) => {
+            if (!submission || !submission.examId) return null;
+
             const questions = await Question.find({ examId: submission.examId._id }).exec();
+            const userAnswers = submission.answers || {};
 
-            // Assuming submission.answers is a Map
-            const userAnswers = submission.answers; // If it's a Map, no need to convert to array
-
-            // Attach the user's answers to each corresponding question
             const questionsWithUserAnswers = questions.map(question => {
-                // Get the user's answer for this specific question using Map.get()
-                const userAnswer = userAnswers.get(question._id.toString());
-
+                let userAnswer = null;
+                if (typeof userAnswers.get === "function") {
+                    userAnswer = userAnswers.get(question._id.toString());
+                } else {
+                    userAnswer = userAnswers[question._id.toString()] || userAnswers[question._id] || null;
+                }
                 return {
-                    ...question.toObject(), // Convert the mongoose document to a plain object
-                    userAnswer: userAnswer || null, // Add user's answer to the question object
-                    isCorrect: determineIfCorrect(question, userAnswer) // Call a function to check correctness
+                    ...question.toObject(),
+                    userAnswer: userAnswer || null,
+                    isCorrect: determineIfCorrect(question, userAnswer)
                 };
             });
 
             return {
-                ...submission.toObject(), // Convert mongoose document to plain object
-                questions: questionsWithUserAnswers // Include questions along with user's answers
+                ...submission.toObject(),
+                questions: questionsWithUserAnswers
             };
         }));
 
-        // Return the submissions with questions and user's answers
-        return res.status(200).json(submissionsWithQuestions); // Send the combined data back in the response
+        const filteredSubmissionsWithQuestions = submissionsWithQuestions.filter(Boolean);
+
+        return res.status(200).json(filteredSubmissionsWithQuestions);
     } catch (error) {
         console.error('Error fetching user submissions:', error);
         res.status(500).json({
