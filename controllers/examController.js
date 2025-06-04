@@ -153,7 +153,9 @@ exports.submitExam = async (req, res) => {
         const questions = await Question.find({ exam: examId }); // we have to give like this
 
         questions.forEach((question) => {
-            const userAnswer = answers[question._id];
+            // const userAnswer = answers[question._id];
+          const userAnswer = answers[question._id.toString()]
+
 
             if (!userAnswer) return;
 
@@ -254,8 +256,10 @@ exports.getUserSubmissions = async (req, res) => {
                 const questions = await Question.find({ 
                     exam: submission.examId._id  // here (examId instead of exam)
                 }).exec();
+                console.log("Fetched Questions:", questions);
                 
                 const userAnswers = submission.answers;
+               
                 
                 console.log('User Answers Type:', typeof userAnswers);
                 console.log('User Answers:', userAnswers);
@@ -285,7 +289,7 @@ exports.getUserSubmissions = async (req, res) => {
                 const submissionData = {
                     ...submission.toObject(),
                     questions: questionsWithUserAnswers,
-                    totalQuestions: submission.examId.totalQuestions || questions.length,
+                    totalQuestions: questions.length,
                     examName: submission.examId.name,
                     totalMarks: submission.examId.totalMarks
                 };
@@ -309,3 +313,84 @@ exports.getUserSubmissions = async (req, res) => {
         });
     }
 };
+
+// exports.getUserSubmissions = async (req, res) => {
+//     try {
+//         const userId = req.user.userId;
+
+//         const submissions = await Submission.find({ userId })
+//             .populate({
+//                 path: 'examId',
+//                 select: 'name totalMarks totalQuestions'
+//             })
+//             .exec();
+
+//         if (!submissions || submissions.length === 0) {
+//             return res.status(404).json({ 
+//                 message: 'No submissions found for this user.' 
+//             });
+//         }
+
+//         const determineIfCorrect = (question, userAnswer) => {
+//             if (!userAnswer) return false;
+            
+//             const correctAnswer = question.correctAnswer?.toString().trim().toLowerCase();
+//             const userAnswerNormalized = userAnswer?.toString().trim().toLowerCase();
+
+//             return correctAnswer === userAnswerNormalized;
+//         };
+
+//         const validSubmissions = submissions.filter(sub => sub && sub.examId);
+
+//         const submissionsWithQuestions = await Promise.all(
+//             validSubmissions.map(async (submission) => {
+//                 const examId = submission.examId._id;
+
+//                 const questions = await Question.find({ exam: examId }).exec();
+//                 const userAnswers = submission.answers || {};
+
+//                 let correctCount = 0;
+
+//                 const questionsWithUserAnswers = questions.map(question => {
+//                     const qid = question._id.toString();
+//                     const userAnswer = userAnswers[qid] || userAnswers[question._id] || null;
+//                     const isCorrect = determineIfCorrect(question, userAnswer);
+
+//                     if (isCorrect) correctCount++;
+
+//                     return {
+//                         ...question.toObject(),
+//                         userAnswer,
+//                         isCorrect
+//                     };
+//                 });
+
+//                 const totalQuestions = questions.length;
+//                 const score = totalQuestions > 0 
+//                     ? ((correctCount / totalQuestions) * 100).toFixed(2) 
+//                     : 0;
+
+//                 return {
+//                     ...submission.toObject(),
+//                     questions: questionsWithUserAnswers,
+//                     totalQuestions,
+//                     examName: submission.examId.name,
+//                     totalMarks: submission.examId.totalMarks,
+//                     correctCount,
+//                     score: Number(score)
+//                 };
+//             })
+//         );
+
+//         const filteredSubmissions = submissionsWithQuestions.filter(Boolean);
+//         return res.status(200).json(filteredSubmissions);
+
+//     } catch (error) {
+//         console.error('Error fetching user submissions:', error);
+//         res.status(500).json({
+//             success: false,
+//             message: 'Failed to retrieve submissions.',
+//             error: error.message
+//         });
+//     }
+// };
