@@ -128,7 +128,8 @@ exports.deleteExam = async (req, res) => {
     }
 };
 
-// Exam submit
+
+// Submit exam method
 exports.submitExam = async (req, res) => {
     try {
         const { examId, answers, warningCount } = req.body;
@@ -138,17 +139,18 @@ exports.submitExam = async (req, res) => {
         if (!exam) {
             return res.status(404).json({ message: 'Exam not found' });
         }
-        // Prevent re-submission
-const existingSubmission = await Submission.findOne({ examId, userId });
-if (existingSubmission) {
-    return res.status(400).json({ message: 'You have already submitted this exam.' });
-}
 
+        // Prevent re-submission
+        const existingSubmission = await Submission.findOne({ examId, userId });
+        if (existingSubmission) {
+            return res.status(400).json({ message: 'You have already submitted this exam.' });
+        }
 
         let correctAnswers = 0;
         let totalMarks = 0;
 
-        const questions = await Question.find({ examId });
+        // in  Question model field name  has 'exam' 
+        const questions = await Question.find({ exam: examId }); // we have to give like this
 
         questions.forEach((question) => {
             const userAnswer = answers[question._id];
@@ -214,8 +216,8 @@ if (existingSubmission) {
         return res.status(500).json({ message: 'Failed to submit exam' });
     }
 };
-
 // Controller function to get all submissions by a user
+
 exports.getUserSubmissions = async (req, res) => {
     try {
         const userId = req.user.userId;
@@ -227,64 +229,83 @@ exports.getUserSubmissions = async (req, res) => {
             })
             .exec();
 
-        if(!submissions || submissions.length === 0) {
-            return res.status(404).json({ message: 'No submissions found for this user.' });
+        if (!submissions || submissions.length === 0) {
+            return res.status(404).json({ 
+                message: 'No submissions found for this user.' 
+            });
         }
-                    
+
         const determineIfCorrect = (question, userAnswer) => {
             if (!userAnswer) return false;
+            
             const correctAnswerNormalized = question.correctAnswer?.toString().trim().toLowerCase();
             const userAnswerNormalized = userAnswer?.toString().trim().toLowerCase();
 
-            const booleanMap = { "true": true, "false": false };
-            const correctAnswerBoolean = booleanMap[correctAnswerNormalized] !== undefined
-                ? booleanMap[correctAnswerNormalized]
-                : correctAnswerNormalized;
-            const userAnswerBoolean = booleanMap[userAnswerNormalized] !== undefined
-                ? booleanMap[userAnswerNormalized]
-                : userAnswerNormalized;
-            return correctAnswerBoolean === userAnswerBoolean;
+            return correctAnswerNormalized === userAnswerNormalized;
         };
 
-        // Defensive: filter out null/invalid submissions
         const validSubmissions = submissions.filter(sub => sub && sub.examId);
 
-        const submissionsWithQuestions = await Promise.all(validSubmissions.map(async (submission) => {
-            if (!submission || !submission.examId) return null;
+        const submissionsWithQuestions = await Promise.all(
+            validSubmissions.map(async (submission) => {
+                if (!submission || !submission.examId) return null;
 
-            const questions = await Question.find({ examId: submission.examId._id }).exec();
-            const userAnswers = submission.answers || {};
+                // in Question model field  name  has'exam' 
+                const questions = await Question.find({ 
+                    exam: submission.examId._id  // here (examId instead of exam)
+                }).exec();
+                
+                const userAnswers = submission.answers;
+                
+                console.log('User Answers Type:', typeof userAnswers);
+                console.log('User Answers:', userAnswers);
 
-            const questionsWithUserAnswers = questions.map(question => {
-                let userAnswer = null;
-                if (typeof userAnswers.get === "function") {
-                    userAnswer = userAnswers.get(question._id.toString());
-                } else {
-                    userAnswer = userAnswers[question._id.toString()] || userAnswers[question._id] || null;
-                }
-                return {
-                    ...question.toObject(),
-                    userAnswer: userAnswer || null,
-                    isCorrect: determineIfCorrect(question, userAnswer)
+                const questionsWithUserAnswers = questions.map(question => {
+                    let userAnswer = null;
+                    
+                    // we should  chaeck answer it multiple ways
+                    if (userAnswers instanceof Map) {
+                        userAnswer = userAnswers.get(question._id.toString());
+                    } 
+                    else if (userAnswers && typeof userAnswers === 'object') {
+                        userAnswer = userAnswers[question._id.toString()] || 
+                                   userAnswers[question._id] ||
+                                   null;
+                    }
+
+                    console.log(`Question ${question._id}: User Answer = ${userAnswer}`);
+
+                    return {
+                        ...question.toObject(),
+                        userAnswer: userAnswer || null,
+                        isCorrect: determineIfCorrect(question, userAnswer)
+                    };
+                });
+
+                const submissionData = {
+                    ...submission.toObject(),
+                    questions: questionsWithUserAnswers,
+                    totalQuestions: submission.examId.totalQuestions || questions.length,
+                    examName: submission.examId.name,
+                    totalMarks: submission.examId.totalMarks
                 };
-            });
 
-            return {
-                ...submission.toObject(),
-                questions: questionsWithUserAnswers,
-                totalQuestions: submission.examId.totalQuestions || questions.length,
-    examName: submission.examId.name,
-            };
-        }));
+                console.log('Final Submission Data:', submissionData);
+                return submissionData;
+            })
+        );
 
-        const filteredSubmissionsWithQuestions = submissionsWithQuestions.filter(Boolean);
+        const filteredSubmissions = submissionsWithQuestions.filter(Boolean);
+        
+        console.log('Final Response:', filteredSubmissions);
+        return res.status(200).json(filteredSubmissions);
 
-        return res.status(200).json(filteredSubmissionsWithQuestions);
     } catch (error) {
         console.error('Error fetching user submissions:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to retrieve submissions.',
+            error: error.message
         });
     }
 };
