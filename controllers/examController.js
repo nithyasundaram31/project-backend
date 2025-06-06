@@ -14,38 +14,73 @@ exports.createExam = async (req, res) => {
     }
 };
 
-// Get all exams
+
 exports.getExams = async (req, res) => {
     const { userId, role } = req.user;
-    let exams;
-    let submittedData;
-    let user;
+
     try {
+        let exams = await Exam.find();
+        let submittedData = [];
+        let user = null;
+
         if (role === "student") {
-            exams = await Exam.find();
-            user = await User.find({ _id: userId })
-                .select('_id examPermission role')
-                .exec();
-            submittedData = await Submission.find({ userId })
-                .populate({
-                    path: 'examId',
-                    select: 'name'
-                })
-                .populate({
-                    path: 'userId',
-                    select: 'examPermission'
-                })
-                .exec();
+            submittedData = await Submission.find({ userId });
+
+            const submittedExamIds = submittedData.map((sub) =>
+                sub.examId.toString()
+            );
+
+            const enrichedExams = exams.map((exam) => {
+                return {
+                    ...exam.toObject(),
+                    isSubmitted: submittedExamIds.includes(exam._id.toString())
+                };
+            });
+console.log("submittedData sample:", submittedData[0]);
+            user = await User.findById(userId).select('_id examPermission role');
+
+            return res.status(200).json({
+                success: true,
+                exams: enrichedExams,
+                submittedData,
+                user
+            });
+
         } else if (role === "admin") {
-            exams = await Exam.find();
+            submittedData = await Submission.find().populate('examId userId');
+
+            //  Admin-க்கும் submission status
+           
+const enrichedExamsForAdmin = exams.map((exam) => {
+    const examSubmissions = submittedData.filter(
+        sub => sub.examId && sub.examId._id.toString() === exam._id.toString()
+    );
+    //  Remove duplicates by userId
+    const uniqueSubmissions = examSubmissions.filter((sub, index, arr) => 
+        arr.findIndex(s => s.userId.toString() === sub.userId.toString()) === index
+    );
+    
+    return {
+        ...exam.toObject(),
+        submissionCount: examSubmissions.length,
+        isSubmitted: examSubmissions.length > 0 // 
+    };
+});
+            return res.status(200).json({
+                success: true,
+                exams: enrichedExamsForAdmin, // Enhanced exams with submission info
+                submittedData,
+                user: null
+            });
         } else {
             return res.status(403).json({ message: 'Unauthorized access' });
         }
-        res.status(200).json({ success: true, exams, submittedData, user });
     } catch (error) {
+        console.error("getExams error:", error);
         res.status(500).json({ message: 'Error fetching exams', error });
     }
 };
+
 
           
 
@@ -207,6 +242,7 @@ exports.submitExam = async (req, res) => {
             warningCount,
         });
         await submission.save();
+      
 
         return res.status(201).json({
             message: 'Exam submitted successfully',
@@ -314,83 +350,3 @@ exports.getUserSubmissions = async (req, res) => {
     }
 };
 
-// exports.getUserSubmissions = async (req, res) => {
-//     try {
-//         const userId = req.user.userId;
-
-//         const submissions = await Submission.find({ userId })
-//             .populate({
-//                 path: 'examId',
-//                 select: 'name totalMarks totalQuestions'
-//             })
-//             .exec();
-
-//         if (!submissions || submissions.length === 0) {
-//             return res.status(404).json({ 
-//                 message: 'No submissions found for this user.' 
-//             });
-//         }
-
-//         const determineIfCorrect = (question, userAnswer) => {
-//             if (!userAnswer) return false;
-            
-//             const correctAnswer = question.correctAnswer?.toString().trim().toLowerCase();
-//             const userAnswerNormalized = userAnswer?.toString().trim().toLowerCase();
-
-//             return correctAnswer === userAnswerNormalized;
-//         };
-
-//         const validSubmissions = submissions.filter(sub => sub && sub.examId);
-
-//         const submissionsWithQuestions = await Promise.all(
-//             validSubmissions.map(async (submission) => {
-//                 const examId = submission.examId._id;
-
-//                 const questions = await Question.find({ exam: examId }).exec();
-//                 const userAnswers = submission.answers || {};
-
-//                 let correctCount = 0;
-
-//                 const questionsWithUserAnswers = questions.map(question => {
-//                     const qid = question._id.toString();
-//                     const userAnswer = userAnswers[qid] || userAnswers[question._id] || null;
-//                     const isCorrect = determineIfCorrect(question, userAnswer);
-
-//                     if (isCorrect) correctCount++;
-
-//                     return {
-//                         ...question.toObject(),
-//                         userAnswer,
-//                         isCorrect
-//                     };
-//                 });
-
-//                 const totalQuestions = questions.length;
-//                 const score = totalQuestions > 0 
-//                     ? ((correctCount / totalQuestions) * 100).toFixed(2) 
-//                     : 0;
-
-//                 return {
-//                     ...submission.toObject(),
-//                     questions: questionsWithUserAnswers,
-//                     totalQuestions,
-//                     examName: submission.examId.name,
-//                     totalMarks: submission.examId.totalMarks,
-//                     correctCount,
-//                     score: Number(score)
-//                 };
-//             })
-//         );
-
-//         const filteredSubmissions = submissionsWithQuestions.filter(Boolean);
-//         return res.status(200).json(filteredSubmissions);
-
-//     } catch (error) {
-//         console.error('Error fetching user submissions:', error);
-//         res.status(500).json({
-//             success: false,
-//             message: 'Failed to retrieve submissions.',
-//             error: error.message
-//         });
-//     }
-// };

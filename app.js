@@ -17,8 +17,7 @@ app.use(cors({
 
     origin: 'http://localhost:5173', // your Netlify frontend URL
   credentials: true, 
-//   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-//   allowedHeaders: ['Content-Type', 'Authorization'], 
+
 }));
 
 // Middleware to parse JSON request bodies

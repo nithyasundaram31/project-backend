@@ -47,6 +47,8 @@ const submissionSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
+    
 }, { timestamps: true });
-
+//Prevent duplicate submission per user per exam
+submissionSchema.index({ examId: 1, userId: 1 }, { unique: true });
 module.exports = mongoose.model('Submission', submissionSchema);

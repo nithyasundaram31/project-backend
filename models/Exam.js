@@ -31,6 +31,11 @@ const examSchema = new mongoose.Schema({
         ref: 'User', // Reference to the User model
         required: true,
     },
+
+    isActive: {
+    type: Boolean,
+    default: true  //  default exam is active
+  },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Exam', examSchema);
