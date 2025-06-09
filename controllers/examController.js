@@ -55,15 +55,16 @@ const enrichedExamsForAdmin = exams.map((exam) => {
     const examSubmissions = submittedData.filter(
         sub => sub.examId && sub.examId._id.toString() === exam._id.toString()
     );
-    //  Remove duplicates by userId
-    const uniqueSubmissions = examSubmissions.filter((sub, index, arr) => 
-        arr.findIndex(s => s.userId.toString() === sub.userId.toString()) === index
-    );
-    
+   
+   const uniqueSubmissions = examSubmissions.filter((sub, index, arr) => 
+    sub?.userId &&
+    arr.findIndex(s => s?.userId && s.userId.toString() === sub.userId.toString()) === index
+);
+
     return {
         ...exam.toObject(),
         submissionCount: examSubmissions.length,
-        isSubmitted: examSubmissions.length > 0 // 
+        isSubmitted: examSubmissions.length > 0
     };
 });
             return res.status(200).json({
