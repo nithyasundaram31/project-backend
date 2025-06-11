@@ -12,11 +12,11 @@ const resultRouter = require("./routers/resultsRoute");
 const app = express();
 
 app.use(cors({
-    // origin: 'https://creative-liger-43d611.netlify.app', // Replace with your frontend URL
-    // credentials: true, // Allow credentials to be sent
+    origin: 'https://ubiquitous-kringle-9f4b7e.netlify.app', // Replace with your frontend URL
+    credentials: true, // Allow credentials to be sent
 
-    origin: 'https://preeminent-travesseiro-3a29ff.netlify.app', // your Netlify frontend URL
-  credentials: true, 
+  //   origin: 'http://localhost:5173', // your Netlify frontend URL
+  // credentials: true, 
 
 }));
 
