@@ -10,9 +10,13 @@ exports.registerUser = async (req, res) => {
         const user = new User({ name, email, password, role });
         await user.save();
         res.status(201).json({ user: { name, email, role }, message: "user successfully registed" });
-    } catch (err) {
-        res.status(400).json({ error: err.message });
-    }
+    } catch (error) {
+        if (error.code === 11000) {
+    res.status(400).json({ message: "Email is already registered." });
+  } else {
+    res.status(500).json({ message: "Something went wrong." });
+  }
+}
 };
 
 // Login user (Student or Admin)

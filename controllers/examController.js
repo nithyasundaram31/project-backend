@@ -168,8 +168,12 @@ exports.deleteExam = async (req, res) => {
 // Submit exam method
 exports.submitExam = async (req, res) => {
     try {
-        const { examId, answers, warningCount } = req.body;
-        const { userId } = req.user;
+        const { examId, answers, warningCount,userId: bodyUserId } = req.body;
+        // const { userId } = req.user;
+        console.log("🟡 Raw req.body: ", req.body);
+
+        const userId = req.user?.userId || bodyUserId;
+        console.log("📥 Submission Saved for User ID:", userId);
 
         const exam = await Exam.findById(examId);
         if (!exam) {
@@ -252,6 +256,7 @@ exports.submitExam = async (req, res) => {
         });
     } catch (error) {
         console.error(error);
+         console.error("❌ Submit Exam Server Error:", error);
         return res.status(500).json({ message: 'Failed to submit exam' });
     }
 };
@@ -268,11 +273,11 @@ exports.getUserSubmissions = async (req, res) => {
             })
             .exec();
 
-        if (!submissions || submissions.length === 0) {
-            return res.status(404).json({ 
-                message: 'No submissions found for this user.' 
-            });
-        }
+        // if (!submissions || submissions.length === 0) {
+        //     return res.status(404).json({ 
+        //         message: 'No submissions found for this user.' 
+        //     });
+        // }
 
         const determineIfCorrect = (question, userAnswer) => {
             if (!userAnswer) return false;
