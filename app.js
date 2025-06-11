@@ -12,7 +12,7 @@ const resultRouter = require("./routers/resultsRoute");
 const app = express();
 
 app.use(cors({
-    origin: 'https://exquisite-basbousa-e8d1d6.netlify.app', // Replace with your frontend URL
+    origin: 'https://classy-sunburst-a1e873.netlify.app', // Replace with your frontend URL
     credentials: true, // Allow credentials to be sent
 
   //   origin: 'http://localhost:5173', // your Netlify frontend URL
