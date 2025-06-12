@@ -1,19 +1,19 @@
-const User = require('../models/User'); // Adjust the path as necessary
-const Submission = require('../models/Submission'); // Adjust the path as necessary
-const Exam = require('../models/Exam'); // Adjust the path as necessary
+const User = require('../models/User'); 
+const Submission = require('../models/Submission'); 
+const Exam = require('../models/Exam'); 
 
 exports.getResultById = async (req, res) => {
-    const { id } = req.params; // Extract userId from request parameters
+    const { id } = req.params; 
 
     try {
-        // Find user by ID
+       
         const user = await User.findById({_id: id});
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
 
         // Find submissions for the specific user
-        const results = await Submission.find({ userId: id }); // Fetch submissions for the user
+        const results = await Submission.find({ userId: id }); 
 
         // Check if there are any results for the specified user
         if (results.length === 0) {
@@ -33,14 +33,14 @@ exports.getResultById = async (req, res) => {
                         name: exam.name,
                         subject: exam.subject,
                         date: exam.date,
-                        // Include other exam details as needed
+                      
                     }
                 };
             } else {
                 // If no exam is found, you might want to handle this case as well
                 return {
                     ...result.toObject(),
-                    exam: null, // You can also omit this if you don't want to include it at all
+                    exam: null,
                 };
             }
         }));

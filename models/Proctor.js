@@ -13,7 +13,7 @@ const ProctorSchema = new mongoose.Schema({
         type: String,
     },
     screenshots: {
-        type: [String], // An array to store previous screenshots (URLs or base64 strings)
+        type: [String], // An array to store previous screenshots 
         default: []
     },
     tabFocused: {
@@ -22,7 +22,7 @@ const ProctorSchema = new mongoose.Schema({
     },
     examId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Exam', // Assuming you have an Exam model
+        ref: 'Exam', //  you have an Exam model
         required: true
     },
     exam: {

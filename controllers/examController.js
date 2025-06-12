@@ -49,7 +49,6 @@ console.log("submittedData sample:", submittedData[0]);
         } else if (role === "admin") {
             submittedData = await Submission.find().populate('examId userId');
 
-            //  Admin-க்கும் submission status
            
 const enrichedExamsForAdmin = exams.map((exam) => {
     const examSubmissions = submittedData.filter(
@@ -81,9 +80,7 @@ const enrichedExamsForAdmin = exams.map((exam) => {
         res.status(500).json({ message: 'Error fetching exams', error });
     }
 };
-
-
-          
+   
 
 exports.getExamById = async (req, res) => {
     const { id } = req.params;
@@ -256,7 +253,6 @@ exports.submitExam = async (req, res) => {
         });
     } catch (error) {
         console.error(error);
-         console.error("❌ Submit Exam Server Error:", error);
         return res.status(500).json({ message: 'Failed to submit exam' });
     }
 };
@@ -273,11 +269,6 @@ exports.getUserSubmissions = async (req, res) => {
             })
             .exec();
 
-        // if (!submissions || submissions.length === 0) {
-        //     return res.status(404).json({ 
-        //         message: 'No submissions found for this user.' 
-        //     });
-        // }
 
         const determineIfCorrect = (question, userAnswer) => {
             if (!userAnswer) return false;

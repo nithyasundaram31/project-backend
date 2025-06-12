@@ -165,7 +165,7 @@ exports.createProctor = async (req, res) => {
 //get proctor by user id
 exports.getProctorByUserId = async (req, res) => {
     try {
-        const { id } = req.params; // Extract userId from the request parameters
+        const { id } = req.params; 
 
         // Find proctor data by userId
         const proctorData = await Proctor.findOne({ userId: id }); // Assuming 'userId' is a field in the Proctor model
