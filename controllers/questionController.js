@@ -26,7 +26,7 @@ const addQuestion = async (req, res) => {
 // Get all questions
 const getAllQuestions = async (req, res) => {
     try {
-        const questions = await Question.find();
+        const questions = await Question.find().populate('exam');
         res.status(200).json(questions);
     } catch (error) {
         res.status(400).json({ error: error.message });

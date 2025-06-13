@@ -32,13 +32,13 @@ exports.loginUser = async (req, res) => {
         // Check if the user exists with the provided email
         const user = await User.findOne({ email }).select('+password');
         if (!user) {
-            return res.status(401).json({ success: false, message: 'Invalid credentials' });
+            return res.status(401).json({ success: false, message: 'Invalid credentials. Please try again.' });
         }
 
         // Compare the provided password with the stored password
         const match = await bcrypt.compare(password, user.password);
         if (!match) {
-            return res.status(401).json({ success: false, message: 'Invalid credentials' });
+            return res.status(401).json({ success: false, message: 'Invalid credentials. Please try again.' });
         }
         const token = await createToken(user);
         res.status(200).json({ token, user: { name: user.name, email: user.email, role: user.role, id: user._id, examPermission: user.examPermission }, message: "user successfully login" });
