@@ -81,66 +81,6 @@ exports.getExams = async (req, res) => {
     }
 };
 
-
-// exports.getExamById = async (req, res) => {
-//     const { id } = req.params;
-
-//     try {
-//         if (!mongoose.Types.ObjectId.isValid(id)) {
-//             return res.status(400).json({ message: 'Invalid exam ID' });
-//         }
-
-//         const exam = await Exam.findById(id);
-//         if (!exam) {
-//             return res.status(404).json({ message: 'Exam not found' });
-//         }
-// const submission = await Submission.findOne({
-//             exam: id,
-//             user: req.user.id // make sure req.user.id available via auth middleware
-//         });
-
-//        if (submission) {
-//             // ✅ Don't return 400 — return submitted status
-//             return res.status(200).json({ isSubmitted: true });
-//         }
-
-//         // Now fetch questions using the correct field `exam`
-//         const questions = await Question.find({ exam: id });
-
-//         const formattedExam = {
-//              isSubmitted: false,
-//             examData: {
-//                 id: exam._id,
-//                 name: exam.name,
-//                 date: exam.date,
-//                 duration: exam.duration,
-//                 totalMarks: exam.totalMarks,
-//                 totalQuestions: exam.totalQuestions,
-//                 description: exam.description,
-//                 createdBy: exam.createdBy
-//             },
-//             questions: questions.map((question, index) => ({
-//                 questionNumber: index + 1,
-//                 id: question._id,
-//                 question: question.question,
-//                 questionType: question.questionType,
-//                 options: question.options,
-//                 difficulty: question.difficulty,
-//                 correctAnswer: question.correctAnswer
-//             })),
-//             metadata: {
-//                 createdAt: exam.createdAt,
-//                 updatedAt: exam.updatedAt
-//             }
-//         };
-
-//         res.status(200).json(formattedExam);
-//     } catch (error) {
-//         console.error("getExamById Error: ", error);
-//         res.status(500).json({ message: 'Error fetching exam', error: error.message });
-//     }
-// };
-
 exports.getExamById = async (req, res) => {
     const { id } = req.params;
 
