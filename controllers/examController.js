@@ -2,7 +2,7 @@ const Exam = require('../models/Exam');
 const Question = require('../models/Question');
 const Submission = require('../models/Submission');
 const User = require('../models/User');
-const mongoose = require('mongoose'); 
+const mongoose = require('mongoose');
 
 exports.createExam = async (req, res) => {
     try {
@@ -36,7 +36,7 @@ exports.getExams = async (req, res) => {
                     isSubmitted: submittedExamIds.includes(exam._id.toString())
                 };
             });
-console.log("submittedData sample:", submittedData[0]);
+            console.log("submittedData sample:", submittedData[0]);
             user = await User.findById(userId).select('_id examPermission role');
 
             return res.status(200).json({
@@ -49,23 +49,23 @@ console.log("submittedData sample:", submittedData[0]);
         } else if (role === "admin") {
             submittedData = await Submission.find().populate('examId userId');
 
-           
-const enrichedExamsForAdmin = exams.map((exam) => {
-    const examSubmissions = submittedData.filter(
-        sub => sub.examId && sub.examId._id.toString() === exam._id.toString()
-    );
-   
-   const uniqueSubmissions = examSubmissions.filter((sub, index, arr) => 
-    sub?.userId &&
-    arr.findIndex(s => s?.userId && s.userId.toString() === sub.userId.toString()) === index
-);
 
-    return {
-        ...exam.toObject(),
-        submissionCount: examSubmissions.length,
-        isSubmitted: examSubmissions.length > 0
-    };
-});
+            const enrichedExamsForAdmin = exams.map((exam) => {
+                const examSubmissions = submittedData.filter(
+                    sub => sub.examId && sub.examId._id.toString() === exam._id.toString()
+                );
+
+                const uniqueSubmissions = examSubmissions.filter((sub, index, arr) =>
+                    sub?.userId &&
+                    arr.findIndex(s => s?.userId && s.userId.toString() === sub.userId.toString()) === index
+                );
+
+                return {
+                    ...exam.toObject(),
+                    submissionCount: examSubmissions.length,
+                    isSubmitted: examSubmissions.length > 0
+                };
+            });
             return res.status(200).json({
                 success: true,
                 exams: enrichedExamsForAdmin, // Enhanced exams with submission info
@@ -80,7 +80,66 @@ const enrichedExamsForAdmin = exams.map((exam) => {
         res.status(500).json({ message: 'Error fetching exams', error });
     }
 };
-   
+
+
+// exports.getExamById = async (req, res) => {
+//     const { id } = req.params;
+
+//     try {
+//         if (!mongoose.Types.ObjectId.isValid(id)) {
+//             return res.status(400).json({ message: 'Invalid exam ID' });
+//         }
+
+//         const exam = await Exam.findById(id);
+//         if (!exam) {
+//             return res.status(404).json({ message: 'Exam not found' });
+//         }
+// const submission = await Submission.findOne({
+//             exam: id,
+//             user: req.user.id // make sure req.user.id available via auth middleware
+//         });
+
+//        if (submission) {
+//             // ✅ Don't return 400 — return submitted status
+//             return res.status(200).json({ isSubmitted: true });
+//         }
+
+//         // Now fetch questions using the correct field `exam`
+//         const questions = await Question.find({ exam: id });
+
+//         const formattedExam = {
+//              isSubmitted: false,
+//             examData: {
+//                 id: exam._id,
+//                 name: exam.name,
+//                 date: exam.date,
+//                 duration: exam.duration,
+//                 totalMarks: exam.totalMarks,
+//                 totalQuestions: exam.totalQuestions,
+//                 description: exam.description,
+//                 createdBy: exam.createdBy
+//             },
+//             questions: questions.map((question, index) => ({
+//                 questionNumber: index + 1,
+//                 id: question._id,
+//                 question: question.question,
+//                 questionType: question.questionType,
+//                 options: question.options,
+//                 difficulty: question.difficulty,
+//                 correctAnswer: question.correctAnswer
+//             })),
+//             metadata: {
+//                 createdAt: exam.createdAt,
+//                 updatedAt: exam.updatedAt
+//             }
+//         };
+
+//         res.status(200).json(formattedExam);
+//     } catch (error) {
+//         console.error("getExamById Error: ", error);
+//         res.status(500).json({ message: 'Error fetching exam', error: error.message });
+//     }
+// };
 
 exports.getExamById = async (req, res) => {
     const { id } = req.params;
@@ -95,10 +154,35 @@ exports.getExamById = async (req, res) => {
             return res.status(404).json({ message: 'Exam not found' });
         }
 
-        // Now fetch questions using the correct field `exam`
+        // Check if user has already submitted this exam
+        const submission = await Submission.findOne({
+            examId: id, // Use examId instead of exam
+            userId: req.user.userId // Use userId consistently
+        });
+
+        if (submission) {
+            // Return submitted status with basic exam info
+            return res.status(200).json({
+                isSubmitted: true,
+                examData: {
+                    id: exam._id,
+                    name: exam.name,
+                    date: exam.date,
+                    duration: exam.duration,
+                    totalMarks: exam.totalMarks,
+                    totalQuestions: exam.totalQuestions,
+                    description: exam.description,
+                    createdBy: exam.createdBy
+                },
+                message: 'Exam already submitted'
+            });
+        }
+
+        // Fetch questions using the correct field `exam`
         const questions = await Question.find({ exam: id });
 
         const formattedExam = {
+            isSubmitted: false,
             examData: {
                 id: exam._id,
                 name: exam.name,
@@ -130,7 +214,6 @@ exports.getExamById = async (req, res) => {
         res.status(500).json({ message: 'Error fetching exam', error: error.message });
     }
 };
-
 
 // Update exam
 exports.updateExam = async (req, res) => {
@@ -165,9 +248,9 @@ exports.deleteExam = async (req, res) => {
 // Submit exam method
 exports.submitExam = async (req, res) => {
     try {
-        const { examId, answers, warningCount,userId: bodyUserId } = req.body;
+        const { examId, answers, warningCount, userId: bodyUserId } = req.body;
         // const { userId } = req.user;
-        console.log("🟡 Raw req.body: ", req.body);
+        console.log("Raw req.body: ", req.body);
 
         const userId = req.user?.userId || bodyUserId;
         console.log("📥 Submission Saved for User ID:", userId);
@@ -191,7 +274,7 @@ exports.submitExam = async (req, res) => {
 
         questions.forEach((question) => {
             // const userAnswer = answers[question._id];
-          const userAnswer = answers[question._id.toString()]
+            const userAnswer = answers[question._id.toString()]
 
 
             if (!userAnswer) return;
@@ -244,7 +327,7 @@ exports.submitExam = async (req, res) => {
             warningCount,
         });
         await submission.save();
-      
+
 
         return res.status(201).json({
             message: 'Exam submitted successfully',
@@ -272,7 +355,7 @@ exports.getUserSubmissions = async (req, res) => {
 
         const determineIfCorrect = (question, userAnswer) => {
             if (!userAnswer) return false;
-            
+
             const correctAnswerNormalized = question.correctAnswer?.toString().trim().toLowerCase();
             const userAnswerNormalized = userAnswer?.toString().trim().toLowerCase();
 
@@ -286,28 +369,28 @@ exports.getUserSubmissions = async (req, res) => {
                 if (!submission || !submission.examId) return null;
 
                 // in Question model field  name  has'exam' 
-                const questions = await Question.find({ 
+                const questions = await Question.find({
                     exam: submission.examId._id  // here (examId instead of exam)
                 }).exec();
                 console.log("Fetched Questions:", questions);
-                
+
                 const userAnswers = submission.answers;
-               
-                
+
+
                 console.log('User Answers Type:', typeof userAnswers);
                 console.log('User Answers:', userAnswers);
 
                 const questionsWithUserAnswers = questions.map(question => {
                     let userAnswer = null;
-                    
+
                     // we should  chaeck answer it multiple ways
                     if (userAnswers instanceof Map) {
                         userAnswer = userAnswers.get(question._id.toString());
-                    } 
+                    }
                     else if (userAnswers && typeof userAnswers === 'object') {
-                        userAnswer = userAnswers[question._id.toString()] || 
-                                   userAnswers[question._id] ||
-                                   null;
+                        userAnswer = userAnswers[question._id.toString()] ||
+                            userAnswers[question._id] ||
+                            null;
                     }
 
                     console.log(`Question ${question._id}: User Answer = ${userAnswer}`);
@@ -333,16 +416,14 @@ exports.getUserSubmissions = async (req, res) => {
         );
 
         const filteredSubmissions = submissionsWithQuestions.filter(Boolean);
-        
+
         console.log('Final Response:', filteredSubmissions);
         return res.status(200).json(filteredSubmissions);
 
     } catch (error) {
         console.error('Error fetching user submissions:', error);
         res.status(500).json({
-            success: false,
-            message: 'Failed to retrieve submissions.',
-            error: error.message
+            success: false, message: 'Failed to retrieve submissions.', error: error.message
         });
     }
 };
