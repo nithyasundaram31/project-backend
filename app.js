@@ -12,7 +12,7 @@ const resultRouter = require("./routers/resultsRoute");
 const app = express();
 
 app.use(cors({
-    origin: 'https://tourmaline-sherbet-d10dd9.netlify.app', // Replace with your frontend URL
+    origin: 'https://effervescent-begonia-d4629d.netlify.app', // Replace with your frontend URL
     credentials: true, // Allow credentials to be sent
 
 
