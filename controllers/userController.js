@@ -7,6 +7,17 @@ exports.registerUser = async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
 
+         // validate input
+            if (!name || !email || !password) {
+                return res.status(400).json({ message: 'All fields are required' });
+            }
+            // check if user already exists
+            const existingUser = await User.findOne({ email });
+
+            if (existingUser) {
+                return res.status(400).json({ message: 'User already exists' });
+            }
+
         //   if role is not student (protect from frontend )
         if (role !== 'student') {
             return res.status(403).json({ message: "You are not allowed to register as admin." });
@@ -18,12 +29,10 @@ exports.registerUser = async (req, res) => {
         res.status(201).json({ user: { name, email, role }, message: "User successfully registered" });
 
     } catch (error) {
-        if (error.code === 11000) {
-            res.status(400).json({ message: "Email is already registered." });
-        } else {
+        
             res.status(500).json({ message: "Something went wrong." });
         }
-    }
+    
 };
 
 //  Login Controller (both Admin & Student)
